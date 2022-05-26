@@ -1,9 +1,22 @@
-# CDE-ND-project-1
-Files + submission for Project 1 of Udacity Cloud DevOps Engineer Nanodegree
+# CDE-ND-Projects
+My Course content solutions + Project submissions for the Udacity Cloud DevOps Engineer Nanodegree.
 
-## Project Title
+## Course 1: Cloud Fundamentals
+Files + submission for Project 1.
+
+### Project Title
 Deploy a Static Website on AWS using Amazon S3 and CloudFront.
 
-## Contents
+### Contents
 - Sample website folder (slightly customised)
 - Submission Folder
+
+## Course 2: Infrastructure as Code
+Submission for Project 2 and Solutions to challenges in Course 2 + personal exercises.
+
+### Project Title
+Deploy a high-availability web app using CloudFormation.
+
+### Contents
+- Challenges + Personal exercises
+- Submission
