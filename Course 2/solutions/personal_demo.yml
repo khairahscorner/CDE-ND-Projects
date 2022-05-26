@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Airah Yusuff - This template provisions an EC2 instance after creating a new VPC, subnet and security group
+Resources:
+  VPCForEC2Instance:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: 'true'
+      Tags:
+      - Key: name
+        Value: secondvpc
+
+  SubnetViaCF:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPCForEC2Instance
+      CidrBlock: 10.0.0.0/24
+
+  NewSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group via CF
+      VpcId:
+        Ref: VPCForEC2Instance
+      SecurityGroupIngress:
+        CidrIp: 197.210.45.72/32
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+
+  EC2InstanceViaCF:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-0022f774911c1d690
+      InstanceType: t2.micro
+      KeyName: key3
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          GroupSet:
+            - Ref: "NewSG"
+          SubnetId:
+            Ref: "SubnetViaCF"
