@@ -1,0 +1,93 @@
+
+Description: A template that provisions an EC2 instance with configuration to deploy it to an Apache web server
+
+Parameters:
+  EnvironmentName:
+    Description: Environment name
+    Type: String
+    Default: Challenge-1 Solution
+  VpcCIDR:
+    Description: CIDR block for the VPC
+    Type: String
+    Default: 130.10.0.0/16
+  SubnetCIDR:
+    Description: CIDR block for the Subnet
+    Type: String
+    Default: 130.10.1.0/24
+  LinuxAMI:
+    Description: AMI for the EC2 instance
+    Type: String
+
+Resources:
+  Challenge1Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} VPC
+
+  Challenge1Gateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Internet Gateway
+
+  Challenge1VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Challenge1Gateway
+      VpcId: !Ref Challenge1Vpc
+
+  Challenge1Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Challenge1Vpc
+      CidrBlock: !Ref SubnetCIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Subnet
+  
+  Challenge1SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for challenge 1
+      VpcId: !Ref Challenge1Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/16
+          FromPort: 80
+          ToPort: 80
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} SG
+
+  Challenge1Key:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: challenge1key
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Key pair
+  
+  Challenge1Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref LinuxAMI
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref Challenge1SG
+          SubnetId: !Ref Challenge1Subnet
+      KeyName: !Ref Challenge1Key
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y httpd
+          sudo systemctl start httpd
+          sudo systemctl enable httpd
