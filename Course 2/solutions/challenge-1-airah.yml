@@ -43,6 +43,7 @@ Resources:
   Challenge1Subnet:
     Type: AWS::EC2::Subnet
     Properties:
+      AvailabilityZone: us-east-1a
       VpcId: !Ref Challenge1Vpc
       CidrBlock: !Ref SubnetCIDR
       Tags:
@@ -56,9 +57,13 @@ Resources:
       VpcId: !Ref Challenge1Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp
-          CidrIp: 0.0.0.0/16
+          CidrIp: 0.0.0.0/0
           FromPort: 80
           ToPort: 80
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 443
+          ToPort: 443
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} SG
@@ -87,7 +92,8 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          sudo yum update -y
-          sudo yum install -y httpd
-          sudo systemctl start httpd
-          sudo systemctl enable httpd
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "Hello World" > /var/www/html/index.html

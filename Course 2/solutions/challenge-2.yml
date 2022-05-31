@@ -1,0 +1,189 @@
+Description: Challenge 2 script to create new cloud environment
+Parameters:
+  EnvironmentName:
+    Description: Environment name?
+    Type: String
+    Default: New CFScript
+  VpcCIDR:
+    Description: CIDR block for the VPC?
+    Type: String
+    Default: 10.0.0.0/16
+  PublicSubnetCIDR:
+    Description: Specify CIDR block for public subnet
+    Type: String
+    Default: 10.0.0.0/24
+  PrivateSubnetCIDR:
+    Description: Specify CIDR block for private subnet
+    Type: String
+    Default: 10.0.2.0/24
+
+Resources:
+  NewVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} VPC
+
+  Public:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref PublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref NewVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public subnet
+
+  Private:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref PrivateSubnetCIDR
+      VpcId: !Ref NewVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private subnet
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Internet gateway
+  
+  AttachGatewayToVpc:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref NewVpc
+      InternetGatewayId: !Ref InternetGateway
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: AttachGatewayToVpc
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} EIP
+  
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref Public
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} NAT gateway
+
+  DefaultPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NewVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} PU RT
+  
+  DefaultPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NewVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} PR RT
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref DefaultPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref DefaultPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+  
+  PublicRTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref DefaultPublicRouteTable
+      SubnetId: !Ref Public
+
+  PrivateRTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref DefaultPrivateRouteTable
+      SubnetId: !Ref Private
+
+Outputs:
+  VpcId:
+    Description: ID of the created VPC
+    Value: !Ref NewVpc
+    Export:
+      Name: !Sub ${EnvironmentName}-VPC-ID  
+  PublicSubnetId:
+    Description: ID of the public subnet
+    Value: !Ref Public
+    Export:
+      Name: !Sub ${EnvironmentName}-PUSub-ID
+  PrivateSubnetId:
+    Description: ID of the private subnet
+    Value: !Ref Public
+    Export:
+      Name: !Sub ${EnvironmentName}-PRSub-ID
+  InternetGatewayId:
+    Description: ID of the internet gateway
+    Value: !Ref InternetGateway
+    Export:
+      Name: !Sub ${EnvironmentName}-IG-ID
+  GatewayAttachmentId:
+    Description: VPC gateway attachment ID
+    Value: !Ref AttachGatewayToVpc
+    Export:
+      Name: !Sub ${EnvironmentName}-Gateway-Attachment-ID
+  EIP:
+    Description: Elastic IP address
+    Value: !Ref NatGatewayEIP
+    Export:
+      Name: !Sub ${EnvironmentName}-EIP
+  NatGatewayId:
+    Description: NAT gateway ID
+    Value: !Ref NatGateway
+    Export:
+      Name: !Sub ${EnvironmentName}-NAT-ID
+  PublicRouteTableId:
+    Description: ID of the public route table
+    Value: !Ref DefaultPublicRouteTable
+    Export:
+      Name: !Sub ${EnvironmentName}-PU-RT-ID
+  PrivateRouteTableId:
+    Description: ID of the private route table
+    Value: !Ref DefaultPrivateRouteTable
+    Export:
+      Name: !Sub ${EnvironmentName}-PR-RT-ID
+  PublicRouteId:
+    Description: public route ID
+    Value: !Ref PublicRoute
+    Export:
+      Name: !Sub ${EnvironmentName}-PU-Route-ID
+  PrivateRouteId:
+    Description: private route ID
+    Value: !Ref PrivateRoute
+    Export:
+      Name: !Sub ${EnvironmentName}-PR-Route-ID
+  AllRouteIds:
+    Description: a list of Ids in the environment
+    Value:
+      Fn::Join: [", ", [!Ref PublicRoute, !Ref PrivateRoute]]
+    Export:
+      Name: !Sub ${EnvironmentName}-Route-IDs
