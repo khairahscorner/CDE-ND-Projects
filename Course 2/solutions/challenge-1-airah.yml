@@ -43,6 +43,7 @@ Resources:
   Challenge1Subnet:
     Type: AWS::EC2::Subnet
     Properties:
+      MapPublicIpOnLaunch: "true"
       AvailabilityZone: us-east-1a
       VpcId: !Ref Challenge1Vpc
       CidrBlock: !Ref SubnetCIDR
@@ -60,21 +61,43 @@ Resources:
           CidrIp: 0.0.0.0/0
           FromPort: 80
           ToPort: 80
-        - IpProtocol: tcp
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
           CidrIp: 0.0.0.0/0
-          FromPort: 443
-          ToPort: 443
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} SG
 
-  Challenge1Key:
+  Challenge2Key:
     Type: AWS::EC2::KeyPair
     Properties:
-      KeyName: challenge1key
+      KeyName: Challenge2Key
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Key pair
+
+  DefaultPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Challenge1Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} PU RT
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref DefaultPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Challenge1Gateway
+
+  PublicRTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref DefaultPublicRouteTable
+      SubnetId: !Ref Challenge1Subnet
   
   Challenge1Instance:
     Type: AWS::EC2::Instance
@@ -82,18 +105,22 @@ Resources:
       InstanceType: t3.micro
       ImageId: !Ref LinuxAMI
       NetworkInterfaces:
-        - AssociatePublicIpAddress: true
-          DeleteOnTermination: true
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
           GroupSet:
             - !Ref Challenge1SG
           SubnetId: !Ref Challenge1Subnet
-      KeyName: !Ref Challenge1Key
+      KeyName: !Ref Challenge2Key
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
           yum install -y httpd
           systemctl start httpd
-          systemctl enable httpd
-          echo "Hello World" > /var/www/html/index.html
+          cd /var/www/html
+          echo "Udacity 1st Demo Web Server Up and Running!" > index.html
+
+Outputs:
+  PublicUrl:
+    Description: address to check
+    Value: !GetAtt Challenge1Instance.PublicIp

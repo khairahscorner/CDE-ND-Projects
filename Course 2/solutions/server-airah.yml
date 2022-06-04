@@ -1,0 +1,243 @@
+Parameters:
+  EnvironmentName:
+    Description: Environment name?
+    Type: String
+    Default: C2L4
+  MyIP:
+    Description: My IP address
+    Type: String
+  LaunchConfigAMI:
+    Description: image id for launch config
+    Type: String
+  InstanceType:
+    Description: instance type in launch config
+    Type: String
+    Default: t3.small
+
+Resources:
+  ExerciseKey:
+    Type: AWS::EC2::KeyPair
+    Properties: 
+      KeyName: demoVockey
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} key
+
+  WebServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group for web servers
+      GroupName: WebSG
+      SecurityGroupIngress: 
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: allow access incoming traffic
+        FromPort: 80
+        ToPort: 80
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: allow access incoming traffic
+        FromPort: 8080
+        ToPort: 8080
+      - IpProtocol: tcp
+        # CidrIp: !Sub ${MyIP}/32
+        CidrIp: 0.0.0.0/0
+        Description: allow access via ssh terminal
+        FromPort: 22  
+        ToPort: 22  
+      SecurityGroupEgress: 
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: permit all outgoing traffic from all ports
+        FromPort: 0
+        ToPort: 65535
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} web servers security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPC-ID
+
+  LoadBalancerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group for load balancer
+      GroupName: LoadBalancerSG
+      SecurityGroupIngress: 
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: allow access, incoming internet traffic
+        FromPort: 80
+        ToPort: 80
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: allow access, incoming internet traffic
+        FromPort: 8080
+        ToPort: 8080
+      SecurityGroupEgress: 
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: permit outgoing traffic
+        FromPort: 80
+        ToPort: 80
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: permit outgoing traffic
+        FromPort: 8080
+        ToPort: 8080
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} load balancer security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPC-ID
+  
+  WebLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref LaunchConfigAMI
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref ExerciseKey
+      SecurityGroups:
+        - !Ref WebServerSG
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sdk"
+          Ebs:
+            VolumeSize: '10'
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash
+            apt-get update -y
+            apt-get install apache2 -y
+            systemctl start apache2.service
+            cd /var/www/html
+            echo "Udacity Demo Web Server For second demo Up and Running!" > index.html
+  
+  # WebLaunchTemplate:
+  #   Type: AWS::EC2::LaunchTemplate
+  #   Properties:
+  #     LaunchTemplateName: WebAppTemplate
+  #     LaunchTemplateData:
+  #       ImageId: !Ref LaunchConfigAMI
+  #       InstanceType: !Ref InstanceType
+  #       KeyName: !Ref ExerciseKey
+  #       SecurityGroupIds:
+  #         - !Ref WebServerSG
+  #       BlockDeviceMappings:
+  #         - DeviceName: "/dev/sdk"
+  #           Ebs:
+  #             VolumeSize: '10'
+  #       UserData: !Base64 
+  #         Fn::Sub: |
+  #           #!/bin/bash
+  #           apt-get update -y
+  #           apt-get install apache2 -y
+  #           systemctl start apache2.service
+  #           cd /var/www/html
+  #           echo "Udacity Demo Web Server Up and Running!" > index.html
+
+  WebServersAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MaxSize: '3'
+      MinSize: '1'
+      VPCZoneIdentifier:
+        -  Fn::ImportValue: !Sub ${EnvironmentName}-PUSU1-ID
+        -  Fn::ImportValue: !Sub ${EnvironmentName}-PUSU2-ID
+      LaunchConfigurationName: !Ref WebLaunchConfig
+      # LaunchTemplate:
+      #   LaunchTemplateId: !Ref WebLaunchTemplate
+      #   Version: !GetAtt WebLaunchTemplate.LatestVersionNumber
+      TargetGroupARNs:
+        - !Ref WebServersTargetGroup
+
+  WebServersTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 150
+      HealthCheckPath: '/'
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 120
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      UnhealthyThresholdCount: 5
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPC-ID
+
+  WebServersTargetGroup2:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 150
+      HealthCheckPath: '/'
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 120
+      HealthyThresholdCount: 2
+      Port: 8080
+      Protocol: HTTP
+      TargetType: instance
+      UnhealthyThresholdCount: 5
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPC-ID
+
+  AppLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+        - Fn::ImportValue: !Sub ${EnvironmentName}-PUSU1-ID
+        - Fn::ImportValue: !Sub ${EnvironmentName}-PUSU2-ID
+      SecurityGroups:
+        - !Ref LoadBalancerSG
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} load balancer
+  
+  AppLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref AppLoadBalancer
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebServersTargetGroup
+      Port: 80
+      Protocol: HTTP
+  AppLoadBalancerListener2:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref AppLoadBalancer
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebServersTargetGroup2
+      Port: 8080
+      Protocol: HTTP
+  
+  ALBRule1:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref AppLoadBalancerListener
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref WebServersTargetGroup
+      Priority: 1
+      Conditions:
+        - Field: path-pattern
+          Values: [/]
+  ALBRule2:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref AppLoadBalancerListener2
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref WebServersTargetGroup2
+      Priority: 1
+      Conditions:
+        - Field: path-pattern
+          Values: [/]
+
+Outputs:
+  LoadBalancerURL:
+    Description: load balancer url
+    Value: !GetAtt AppLoadBalancer.DNSName
+    Export:
+      Name: !Sub ${EnvironmentName}-LB
+
+

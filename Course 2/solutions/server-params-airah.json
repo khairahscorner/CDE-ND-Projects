@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey": "EnvironmentName",
+        "ParameterValue": "Course2Project"
+    },
+    {
+        "ParameterKey": "MyIP",
+        "ParameterValue": "197.210.77.165"
+    },
+    {
+        "ParameterKey": "LaunchConfigAMI",
+        "ParameterValue": "ami-09d56f8956ab235b3"
+    },
+    {
+        "ParameterKey": "InstanceType",
+        "ParameterValue": "t3.small"
+    }
+]

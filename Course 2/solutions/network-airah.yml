@@ -2,7 +2,7 @@ Parameters:
   EnvironmentName:
     Description: Environment name?
     Type: String
-    Default: C2L2
+    Default: C2L3
   VpcCIDR:
     Description: CIDR block for the VPC?
     Type: String
@@ -100,7 +100,7 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName} Private Subnet 2
   
-  NatGateway1EIP:
+  MyEIP1:
     Type: AWS::EC2::EIP
     DependsOn: VPCInternetGatewayAttachment
     Properties:
@@ -109,7 +109,7 @@ Resources:
         - Key: Name
           Value: MyEIP 1
 
-  NatGateway2EIP:
+  MyEIP2:
     Type: AWS::EC2::EIP
     DependsOn: VPCInternetGatewayAttachment
     Properties:
@@ -235,14 +235,26 @@ Outputs:
     Value: !Ref PrivateSubnet2
     Export:
       Name: !Sub ${EnvironmentName}-PRSU2-ID
+  AllPrSubnets:
+    Description: list of Private subnet IDs
+    Value: 
+      Fn::Join: [", ", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PR-SUBNETS
+  AllPuSubnets:
+    Description: list of public subnet IDs
+    Value: 
+      Fn::Join: [", ", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PU-SUBNETS
   EipId1:
     Description: ID of Elastic IP address 1
-    Value: !Ref NatGateway1EIP
+    Value: !Ref MyEIP1
     Export:
       Name: !Sub ${EnvironmentName}-EIP1-ID
   EipId2:
     Description: ID of Elastic IP address 2
-    Value: !Ref NatGateway2EIP
+    Value: !Ref MyEIP2
     Export:
       Name: !Sub ${EnvironmentName}-EIP2-ID
   NatId1:
