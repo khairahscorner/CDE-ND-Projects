@@ -15,13 +15,6 @@ Parameters:
     Default: t3.small
 
 Resources:
-  ExerciseKey:
-    Type: AWS::EC2::KeyPair
-    Properties: 
-      KeyName: demoVockey
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName} key
 
   WebServerSG:
     Type: AWS::EC2::SecurityGroup
@@ -95,7 +88,7 @@ Resources:
     Properties:
       ImageId: !Ref LaunchConfigAMI
       InstanceType: !Ref InstanceType
-      KeyName: !Ref ExerciseKey
+      # KeyName: !Ref nd9990_keypair
       SecurityGroups:
         - !Ref WebServerSG
       BlockDeviceMappings:
@@ -109,7 +102,7 @@ Resources:
             apt-get install apache2 -y
             systemctl start apache2.service
             cd /var/www/html
-            echo "Udacity Demo Web Server For second demo Up and Running!" > index.html
+            echo "Udacity Demo Web Server For second demo Up and Running SERVING FROM PRIVATE INSTANCES!" > index.html
   
   # WebLaunchTemplate:
   #   Type: AWS::EC2::LaunchTemplate
@@ -118,7 +111,7 @@ Resources:
   #     LaunchTemplateData:
   #       ImageId: !Ref LaunchConfigAMI
   #       InstanceType: !Ref InstanceType
-  #       KeyName: !Ref ExerciseKey
+  #       KeyName: !Ref nd9990_keypair
   #       SecurityGroupIds:
   #         - !Ref WebServerSG
   #       BlockDeviceMappings:
@@ -164,21 +157,6 @@ Resources:
       VpcId: 
         Fn::ImportValue: !Sub ${EnvironmentName}-VPC-ID
 
-  WebServersTargetGroup2:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 150
-      HealthCheckPath: '/'
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 120
-      HealthyThresholdCount: 2
-      Port: 8080
-      Protocol: HTTP
-      TargetType: instance
-      UnhealthyThresholdCount: 5
-      VpcId: 
-        Fn::ImportValue: !Sub ${EnvironmentName}-VPC-ID
-
   AppLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -200,15 +178,6 @@ Resources:
           TargetGroupArn: !Ref WebServersTargetGroup
       Port: 80
       Protocol: HTTP
-  AppLoadBalancerListener2:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref AppLoadBalancer
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref WebServersTargetGroup2
-      Port: 8080
-      Protocol: HTTP
   
   ALBRule1:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -221,23 +190,11 @@ Resources:
       Conditions:
         - Field: path-pattern
           Values: [/]
-  ALBRule2:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref AppLoadBalancerListener2
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref WebServersTargetGroup2
-      Priority: 1
-      Conditions:
-        - Field: path-pattern
-          Values: [/]
 
 Outputs:
   LoadBalancerURL:
     Description: load balancer url
-    Value: !GetAtt AppLoadBalancer.DNSName
+    Value: 
+      Fn::Join: ["", ["http://", !GetAtt AppLoadBalancer.DNSName]]
     Export:
       Name: !Sub ${EnvironmentName}-LB
-
-

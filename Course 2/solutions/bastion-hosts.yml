@@ -1,0 +1,233 @@
+Description: This script provisions a private server and a bastion host in a public subnet, that can be used to jumpbox into the private server.
+Parameters:
+  EnvironmentName:
+    Description: Environment name
+    Type: String
+    Default: UdacityProject-2
+  VpcCIDR:
+    Description: CIDR block for the VPC
+    Type: String
+    Default: 10.0.0.0/16
+  PublicSubnet1CIDR:
+    Description: Specify CIDR block for public subnet 1
+    Type: String
+    Default: 10.0.0.0/24
+  PrivateSubnet1CIDR:
+    Description: Specify CIDR block for private subnet 1
+    Type: String
+    Default: 10.0.2.0/24
+  LaunchConfigAMI:
+    Description: Image id for launch config
+    Type: AWS::EC2::Image::Id
+    Default: ami-005de95e8ff495156
+  InstanceType:
+    Description: Instance type in launch config
+    Type: String
+    Default: t2.micro
+  MyIp:
+    Description: Computer IP address
+    Type: String
+
+Resources:
+  VPC1:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: VpcCIDR
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGateway1:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+  
+  VPCInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway1
+      VpcId: !Ref VPC1
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC1
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet 1
+  
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC1
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet 1
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC1
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public route table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway1
+
+  PublicSubnetRTAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PrivateSubnetRTAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group for the bastion host
+      GroupName: BastionHostSG
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: allow access via internet
+        FromPort: 80
+        ToPort: 80
+      - IpProtocol: tcp
+        CidrIp: !Ref MyIp
+        Description: allow access via ssh terminal
+        FromPort: 22  
+        ToPort: 22
+      SecurityGroupEgress: 
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: permit all outgoing traffic from all ports
+        FromPort: 0
+        ToPort: 65535
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} host servers security group
+      VpcId: !Ref VPC1
+
+  PrivateServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group for PRIVATE servers
+      GroupName: PrivateServerSG
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: allow access incoming traffic
+        FromPort: 80
+        ToPort: 80
+      SecurityGroupEgress: 
+      - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        Description: permit all outgoing traffic from all ports
+        FromPort: 0
+        ToPort: 65535
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} private servers security group
+      VpcId: !Ref VPC1
+
+  BastionLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: HostTemplate
+      LaunchTemplateData:
+        ImageId: !Ref LaunchConfigAMI
+        InstanceType: !Ref InstanceType
+        KeyName: bastion-host
+        SecurityGroupIds:
+          - !Ref BastionSecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+              #!/bin/bash
+              apt-get update -y
+              apt-get install apache2 -y
+              systemctl start apache2.service
+              cd /var/www/html
+              echo "Bastion host stuff" > index.html
+
+  BastionHost:
+    Type: AWS::EC2::Instance
+    DependsOn: VPCInternetGatewayAttachment
+    Properties:
+      LaunchTemplate:  
+        LaunchTemplateId: !Ref BastionLaunchTemplate
+        Version: 1
+      SubnetId: !Ref PublicSubnet1
+
+  ServerLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: PrivateServerTemplate
+      LaunchTemplateData:
+        ImageId: !Ref LaunchConfigAMI
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds:
+          - !Ref PrivateServerSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash
+            apt-get update -y
+            apt-get install apache2 -y
+            systemctl start apache2.service
+            cd /var/www/html
+            echo "Private Web Server Up and Running" > index.html
+
+  PrivateServer:
+    Type: AWS::EC2::Instance
+    DependsOn: VPCInternetGatewayAttachment
+    Properties:
+      LaunchTemplate:  
+        LaunchTemplateId: !Ref BastionLaunchTemplate
+        Version: 1
+      SubnetId: !Ref PrivateSubnet1
+
+
+  # BastionAutoScalingGroup:
+  #   Type: AWS::AutoScaling::AutoScalingGroup
+  #   DependsOn: VPCInternetGatewayAttachment
+  #   Properties:
+  #     MaxSize: '2'
+  #     MinSize: '1'
+  #     VPCZoneIdentifier:
+  #       -  !Ref PublicSubnet1
+  #     LaunchTemplate:
+  #       LaunchTemplateId: !Ref BastionLaunchTemplate
+  #       Version: !GetAtt BastionLaunchTemplate.LatestVersionNumber
+
+
+Outputs:
+  BastionPublicIp:
+    Description: bastion host public dns
+    Value: 
+      Fn::Join: ["", ["http://", !GetAtt BastionHost.PublicDnsName]]
+    Export:
+      Name: !Sub ${EnvironmentName}-BH-PU-DNS
+      
