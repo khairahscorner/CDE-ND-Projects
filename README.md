@@ -15,7 +15,7 @@ Deploy a Static Website on AWS using Amazon S3 and CloudFront.
 Submission for Project 2 and Solutions to challenges in Course 2 + personal exercises.
 
 ### Project Title
-Deploy a high-availability web app using CloudFormation.
+Deploy a high-availability web app using CloudFormation - https://github.com/khairahscorner/CloudFormation-Udacity-Project
 
 ### Contents
 - Challenges + Personal exercises
