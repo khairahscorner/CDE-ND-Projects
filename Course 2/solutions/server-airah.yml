@@ -192,6 +192,11 @@ Resources:
           Values: [/]
 
 Outputs:
+  PrivateSubnetsSecurityGroup:
+    Description: security group for the private subnets
+    Value: !Ref WebServerSG
+    Export:
+      Name: !Sub ${EnvironmentName}-PR-Security-Group
   LoadBalancerURL:
     Description: load balancer url
     Value: 

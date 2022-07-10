@@ -1,7 +1,7 @@
 [
     {
         "ParameterKey": "EnvironmentName",
-        "ParameterValue": "Course2Project"
+        "ParameterValue": "Course2Exercise"
     },
     {
         "ParameterKey": "VpcCIDR",
