@@ -11,8 +11,6 @@ jobs:
       - aws-cli/setup:
           aws-access-key-id: UDACITY_ACCESS_KEY
           aws-secret-access-key: UDACITY_SECRET
-          aws-session-token: UDACITY_SESSION
-          aws-region: us-east-1
       - run:
           name: AWS testing
           command: |
