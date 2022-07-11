@@ -4,15 +4,6 @@ orbs:
   aws-cli: circleci/aws-cli@3.1
 
 jobs:
-  checkout_repo:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: "Checkout repository and commence flow"
-          command: echo "Starting workflow"
-  
   deploy_infra:
     executor: aws-cli/default
     working_directory: ~/project
@@ -21,10 +12,12 @@ jobs:
           aws-access-key-id: UDACITY_ACCESS
           aws-secret-access-key: UDACITY_SECRET
           aws-region: AWS_REGION
+      - checkout
       - run:
           name: Deploy Cloudformation stack
           command: |
             pwd && ls -a
+            aws cloudformation deploy --template-file template.yml --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} --region us-east-1
 
 workflows:
   workflow-1:
