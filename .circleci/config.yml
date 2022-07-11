@@ -18,7 +18,25 @@ jobs:
           command: |
             aws cloudformation deploy --template-file template.yml --parameter-overrides file://template.json --stack-name myStack-ea47b --region us-east-1
 
+  configure_infra:
+    docker:
+      - image: python:3.8-alpine3.15
+    working_directory: ~/project/Course 3/exercise-2
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["00:9f:03:45:41:38:db:8c:a9:91:59:59:a7:61:d1:8e"]
+      - run:
+          name: Install dependencies and configure server
+          command: |
+            pwd && ls -a
+            apk add --update ansible
+            ansible-playbook -i inventory main-remote.yml
+      
 workflows:
   workflow-1:
     jobs:
       - deploy_infra
+      - configure_infra:
+          requires:
+            - deploy_infra
