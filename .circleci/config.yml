@@ -14,8 +14,7 @@ jobs:
           command: echo "Starting workflow"
   
   deploy_infra:
-    docker:
-      - image:  aws-cli/default
+    executor: aws-cli/default
     steps:
       - aws-cli/setup:
           aws-access-key-id: UDACITY_ACCESS
