@@ -15,6 +15,7 @@ jobs:
   
   deploy_infra:
     executor: aws-cli/default
+    working_directory: ~/project
     steps:
       - aws-cli/setup:
           aws-access-key-id: UDACITY_ACCESS
