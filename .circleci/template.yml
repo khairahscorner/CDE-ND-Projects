@@ -6,12 +6,15 @@ Parameters:
   VpcID:
     Description: VPC ID
     Type: String
+    Default: vpc-0689b8e3d276ae985
   SubnetID:
     Description: subnet for the instance
     Type: String
+    Default: subnet-0f96bedcbd159d4af
   ImageID:
     Description: AMI ID
     Type: String
+    Default: ami-052efd3df9dad4825
 
 Resources:
   WebServerSG:
@@ -39,17 +42,17 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} web servers security group
-      VpcId: !Ref VpcID
+      VpcId: vpc-0689b8e3d276ae985
 
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      ImageId: !Ref ImageID
+      ImageId: ami-052efd3df9dad4825
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet:
             - !Ref WebServerSG
-          SubnetId: !Ref SubnetID
+          SubnetId: subnet-0f96bedcbd159d4af
       KeyName: course3
