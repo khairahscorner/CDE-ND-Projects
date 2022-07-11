@@ -22,5 +22,4 @@ jobs:
 workflows:
   workflow-1:
     jobs:
-      - checkout_repo
       - deploy_infra
