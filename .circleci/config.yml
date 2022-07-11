@@ -21,17 +21,17 @@ jobs:
   configure_infra:
     docker:
       - image: python:3.8-alpine3.15
-    working_directory: ~/project/Course 3/exercise-2
+    working_directory: ~/project
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: ["00:9f:03:45:41:38:db:8c:a9:91:59:59:a7:61:d1:8e"]
+          fingerprints: ["c4:7f:58:83:f1:c3:ec:1e:ad:dd:48:65:1e:21:d3:34"]
       - run:
           name: Install dependencies and configure server
           command: |
             pwd && ls -a
             apk add --update ansible
-            ansible-playbook -i inventory main-remote.yml
+            ansible-playbook -i ./Course 3/exercise-2/inventory ./Course 3/exercise-2/main-remote.yml
       
 workflows:
   workflow-1:
