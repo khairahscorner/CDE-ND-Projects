@@ -31,7 +31,7 @@ jobs:
           command: |
             pwd && ls -a
             apk add --update ansible
-            ansible-playbook -i ./Course 3/exercise-2/inventory ./Course 3/exercise-2/main-remote.yml
+            ansible-playbook -i ./Course\ 3/exercise-2/inventory ./Course\ 3/exercise-2/main-remote.yml
       
 workflows:
   workflow-1:
