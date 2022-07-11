@@ -5,6 +5,8 @@ orbs:
 
 jobs:
   checkout_repo:
+    docker:
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
