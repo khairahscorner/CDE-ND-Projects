@@ -1,0 +1,10 @@
+---
+  - name: Sample - Install Apache and run index file
+    hosts: all
+    user: ubuntu
+    become: true
+    become_method: sudo
+    become_user: root
+    roles:
+      - prepare
+      - apache

@@ -1,0 +1,13 @@
+---
+  - name: Install Apache
+    become: true
+    apt:
+      name: ["apache2"]
+      state: latest
+      update_cache: yes
+  
+  - name: Add server contents
+    copy:
+      dest: /var/www/html/index.html
+      src: index.html
+      backup: yes
