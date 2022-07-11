@@ -23,7 +23,7 @@ jobs:
       - run:
           name: Deploy Cloudformation stack
           command: |
-            aws cloudformation deploy --stack-name StackViaCircleCI --template-file ../template.yml --parameter-overrides file://../template.json
+            aws cloudformation deploy --stack-name StackViaCircleCI --template-file template.yml --parameter-overrides file://./template.json
 
 workflows:
   workflow-1:
