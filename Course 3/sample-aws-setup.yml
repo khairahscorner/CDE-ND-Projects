@@ -1,0 +1,47 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@3.1
+
+jobs:
+  save-aws-ec2-addresses:
+    executor: aws-cli/default
+    working_directory: ~/project
+    steps:
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY
+          aws-secret-access-key: AWS_SECRET_KEY
+          aws-region: AWS_REGION
+      - run:
+          name: AWS testing
+          command: |
+            echo "setting up aws cli?"
+      - run:
+          name: fetch IP addresses of instances
+          command: |
+            echo "[all]" > inventory.txt
+            aws ec2 describe-instances --query "Reservations[*].Instances[*].PublicIpAddress" --filters "Name=tag:Project, Values=udacity" --output text >> inventory.txt
+      - persist_to_workspace:
+          root:  ./
+          paths:
+            - inventory.txt
+  
+  print-result:
+    docker:
+      - image: cimg/base:stable
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: ./workspace
+      - run: 
+          command: |
+            echo "now attaching saved workspace"
+            cat ./workspace/inventory.txt
+
+workflows:
+  aws-ansible-workflow:
+    jobs:
+      - save-aws-ec2-addresses
+      - print-result:
+          requires:
+            - save-aws-ec2-addresses

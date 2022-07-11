@@ -4,44 +4,28 @@ orbs:
   aws-cli: circleci/aws-cli@3.1
 
 jobs:
-  save-aws-ec2-addresses:
-    executor: aws-cli/default
-    working_directory: ~/project
+  checkout_repo:
+    steps:
+      - checkout
+      - run:
+          name: "Checkout repository and commence flow"
+          command: echo "Starting workflow"
+  
+  deploy_infra:
+    docker:
+      - image:  aws-cli/default
     steps:
       - aws-cli/setup:
-          aws-access-key-id: AWS_ACCESS_KEY
-          aws-secret-access-key: AWS_SECRET_KEY
+          aws-access-key-id: UDACITY_ACCESS
+          aws-secret-access-key: UDACITY_SECRET
           aws-region: AWS_REGION
       - run:
-          name: AWS testing
+          name: Deploy Cloudformation stack
           command: |
-            echo "setting up aws cli?"
-      - run:
-          name: fetch IP addresses of instances
-          command: |
-            echo "[all]" > inventory.txt
-            aws ec2 describe-instances --query "Reservations[*].Instances[*].PublicIpAddress" --filters "Name=tag:Project, Values=udacity" --output text >> inventory.txt
-      - persist_to_workspace:
-          root:  ./
-          paths:
-            - inventory.txt
-  
-  print-result:
-    docker:
-      - image: cimg/base:stable
-    working_directory: ~/project
-    steps:
-      - attach_workspace:
-          at: ./workspace
-      - run: 
-          command: |
-            echo "now attaching saved workspace"
-            cat ./workspace/inventory.txt
+            aws cloudformation deploy --stack-name StackViaCircleCI --template-file ../template.yml --parameter-overrides file://../template.json
 
 workflows:
-  aws-ansible-workflow:
+  workflow-1:
     jobs:
-      - save-aws-ec2-addresses
-      - print-result:
-          requires:
-            - save-aws-ec2-addresses
+      - checkout_repo
+      - deploy_infra
