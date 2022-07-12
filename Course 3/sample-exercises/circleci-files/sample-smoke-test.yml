@@ -1,0 +1,27 @@
+version: 2.1
+
+jobs:
+  run_smoke_tests:
+    docker:
+      - image: alpine:latest
+    steps:
+      - run:
+          name: install curl
+          command: apk add --update curl
+      - run:
+          name: run sample test
+          command: |
+            if curl -s --head $TEST_URL
+            then
+              return 0
+            else
+              return 1
+            fi
+      - run:
+          when: on_fail
+          command: echo "This pipeline failed"
+
+workflows:
+  workflow-1:
+    jobs:
+      - run_smoke_tests
