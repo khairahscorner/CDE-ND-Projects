@@ -1,0 +1,38 @@
+Parameters:
+  EnvironmentName:
+    Description: Environment name?
+    Type: String
+    Default: Course3Exercise3
+  S3BucketName:
+    Description: EXISTING S3 BUCKET NAME
+    Type: String
+
+Resources:
+  NewS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref S3BucketName
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      Tags: 
+        - Key: Project 
+          Value: udacity
+  
+  BucketPolicy1:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref NewS3Bucket
+      PolicyDocument:
+        Statement:
+        - Sid: PublicReadForGetBucketObjects
+          Effect: Allow
+          Principal: '*'
+          Action: s3:GetObject
+          Resource: !Join ['', ['arn:aws:s3:::', !Ref 'NewS3Bucket', /*]]
+
+Outputs:
+  StackName:
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub "StackName-${AWS::StackName}"

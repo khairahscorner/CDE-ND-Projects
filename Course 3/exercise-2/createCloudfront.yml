@@ -1,0 +1,64 @@
+Parameters:
+  EnvironmentName:
+    Description: Environment name?
+    Type: String
+    Default: Course3Exercise3
+  S3BucketName:
+    Description: EXISTING S3 BUCKET NAME
+    Type: String
+  StackName:
+    Description: EXISTING stack
+    Type: String
+
+Resources:
+  OAIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties: 
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: OAI for Udacity exercises in course 3
+
+  CachePolicy1:
+    Type: AWS::CloudFront::CachePolicy
+    Properties: 
+      CachePolicyConfig:
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        MinTTL: 86400
+        Name: !Sub "${S3BucketName}cachePolicy"
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig: 
+            CookieBehavior: none
+          EnableAcceptEncodingGzip: false
+          HeadersConfig: 
+            HeaderBehavior: none
+          QueryStringsConfig: 
+            QueryStringBehavior: none
+
+  CloudFrontDistro:
+    Type: AWS::CloudFront::Distribution
+    Properties: 
+      DistributionConfig: 
+        Enabled: true
+        Origins:
+          - DomainName: !Sub "${S3BucketName}.s3.amazonaws.com"
+            Id: !Ref S3BucketName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${OAIdentity}"
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          ViewerProtocolPolicy: redirect-to-https
+          TargetOriginId: !Ref S3BucketName
+          CachePolicyId: !Ref CachePolicy1
+      Tags: 
+        - Key: Project 
+          Value: udacity
+
+Outputs:
+  S3BucketName:
+    Value: !Sub ${S3BucketName}
+    Export:
+      Name: Pipeline-ID
+  StackName:
+    Value: !Sub ${StackName}
+    Export:
+      Name: Stack-ID
