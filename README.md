@@ -20,3 +20,13 @@ Deploy a high-availability web app using CloudFormation - https://github.com/kha
 ### Contents
 - Challenges + Personal exercises
 - Submission
+
+## Course 3: Build CI/CD Pipelines, Monitoring & Logging
+Submission for Project 3 and Solutions to exercises in Course 3 + personal exercises.
+
+### Project Title
+Assessment: Project: Give Your Application Auto-Deploy Superpowers - 
+
+### Contents
+- Exercise solutions + sample exercises
+- Submission
