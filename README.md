@@ -25,7 +25,7 @@ Deploy a high-availability web app using CloudFormation - https://github.com/kha
 Submission for Project 3 and Solutions to exercises in Course 3 + personal exercises.
 
 ### Project Title
-Assessment: Project: Give Your Application Auto-Deploy Superpowers - 
+Assessment: Project: Give Your Application Auto-Deploy Superpowers - link to be updated
 
 ### Contents
 - Exercise solutions + sample exercises
