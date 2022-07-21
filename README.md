@@ -17,6 +17,8 @@ Submission for Project 2 and Solutions to challenges in Course 2 + personal exer
 ### Project Title
 Deploy a high-availability web app using CloudFormation - https://github.com/khairahscorner/CloudFormation-Udacity-Project
 
+Built with AWS CloudFormation, S3, EC2, IAM
+
 ### Contents
 - Challenges + Personal exercises
 - Submission
@@ -25,7 +27,13 @@ Deploy a high-availability web app using CloudFormation - https://github.com/kha
 Submission for Project 3 and Solutions to exercises in Course 3 + personal exercises.
 
 ### Project Title
-Assessment: Project: Give Your Application Auto-Deploy Superpowers - link to be updated
+Assessment: Project: Give Your Application Auto-Deploy Superpowers - https://github.com/khairahscorner/UdapeopleProject
+
+Built with:
+- AWS - RDS, S3, EC2, CloudFront, CloudFormation
+- CircleCI + GitHub Actions
+- Ansible
+- Prometheus
 
 ### Contents
 - Exercise solutions + sample exercises
