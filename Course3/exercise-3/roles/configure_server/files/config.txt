@@ -1,0 +1,76 @@
+##prometheus.yml
+global:
+  scrape_interval: 15s
+  external_labels:
+    monitor: 'prometheus'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  
+  - job_name: 'manual_node'
+    static_configs:
+      - targets: ['dns name here:9100']
+
+  - job_name: 'auto_connect'
+    ec2_sd_configs:
+      - region: us-east-1
+        access_key: [replace with IAM user accesskey]
+        secret_key: [replace with IAM user  secretkey]
+        port: 9100
+
+
+
+##rules.yml
+groups:
+  - name: AllInstances
+    rules:
+    - alert: InstanceDown
+      expr: up == 0
+      for: 1m
+      annotations:
+        title: 'Instance {{ $labels.instance }} down'
+        description: '{{ $labels.instance }}'
+      labels:
+        severity: 'critical'
+    - alert: LowOnMemory
+      expr: node_memory_MemFree_bytes/10^6 < 60
+      for: 1m
+      annotations:
+        title: 'INSTANCE {{ $labels.instance }} GETTING LOW ON MEMORY'
+        description: '{{ $labels.instance }} MEMORY LEFT: {{node_memory_MemFree_bytes/10^6}}MB'
+      labels:
+        severity: 'warning'
+
+
+
+##alertmanager.yml
+global:
+  resolve_timeout: 1m
+  slack_api_url: [add slack webhook here]
+  smtp_smarthost: smtp.gmail.com:587
+  smtp_auth_username: airahtueme@gmail.com
+  smtp_auth_password: [generate another app password]
+  smtp_auth_identity: airahtueme@gmail.com
+  smtp_from: airahtueme@gmail.com
+
+route:
+  receiver: 'slack-notifications'
+  routes:
+  - receiver: 'send-to-email'
+    matchers:
+    - severity="warning"
+
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+    - channel: '#monitoring-environments-with-prometheus'
+    - send_resolved: true
+
+  - name: 'send-to-email'
+    email_configs:
+    - send_resolved: true
+      to: airahyusuff@gmail.com
+      html: "Guyy, your instance is down"
+      text: "Guyy, your instance is down"

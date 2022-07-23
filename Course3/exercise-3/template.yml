@@ -1,0 +1,60 @@
+Parameters:
+  EnvironmentName:
+    Description: Environment name?
+    Type: String
+    Default: Course3Exercise4
+  VpcID:
+    Description: VPC ID
+    Type: String
+  SubnetID:
+    Description: subnet for the instance
+    Type: String
+  SGId:
+    Description: security group for the instance
+    Type: String
+  ImageID:
+    Description: AMI ID
+    Type: String
+
+Resources:
+  PrometheusServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref ImageID
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref SGId
+          SubnetId: !Ref SubnetID
+      KeyName: course3
+      Tags:
+        - Key: Name
+          Value: PrometheusServer
+
+  PrometheusNodeExporter:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref ImageID
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref SGId
+          SubnetId: !Ref SubnetID
+      KeyName: course3
+      Tags:
+        - Key: Name
+          Value: PrometheusNodeExporter
+
+Outputs:
+  ServerIP:
+    Value: !GetAtt PrometheusServer.PublicDnsName
+    Export:
+      Name: ServerDNS
+  NodeExporterIP:
+    Value: !GetAtt PrometheusNodeExporter.PublicDnsName
+    Export:
+      Name: NodeExporterDNS

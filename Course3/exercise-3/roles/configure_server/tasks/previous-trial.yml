@@ -1,0 +1,82 @@
+--- 
+  - name: "create new user"
+    become: true
+    shell: |
+      useradd --no-create-home prometheus
+      if [ -d "/etc/prometheus" ] && [ -d "/var/lib/prometheus" ]
+      then
+        echo "Directory already exists."
+      else
+        echo "Creating directories"
+        mkdir /etc/prometheus
+        mkdir /var/lib/prometheus
+      fi
+      exit 0
+  
+  - name: "install server binaries"
+    become: true
+    shell: |
+      wget https://github.com/prometheus/prometheus/releases/download/v2.19.0/prometheus-2.19.0.linux-amd64.tar.gz
+      tar xvfz prometheus-2.19.0.linux-amd64.tar.gz
+      cp prometheus-2.19.0.linux-amd64/prometheus /usr/local/bin
+      cp prometheus-2.19.0.linux-amd64/promtool /usr/local/bin/
+      cp -r prometheus-2.19.0.linux-amd64/consoles /etc/prometheus
+      cp -r prometheus-2.19.0.linux-amd64/console_libraries /etc/prometheus
+      cp prometheus-2.19.0.linux-amd64/promtool /usr/local/bin/
+      rm -rf prometheus-2.19.0.linux-amd64.tar.gz prometheus-2.19.0.linux-amd64
+
+  - name: "make new dir"
+    shell: |
+      if [ -d "~/files" ]
+      then
+        echo "Directory already exists."
+      else
+        echo "Creating directory"
+        mkdir ~/files
+      fi
+      exit 0
+
+  - name: "copy first file"
+    copy:
+      src: config.txt
+      dest: ~/files/config.txt
+    register: copied_file_0
+
+  - name: "copy second file"
+    copy:
+      src: service.txt
+      dest: ~/files/service.txt
+    register: copied_file_1
+
+  - name: "configure server scrap config"
+    become: true
+    shell: |
+      pwd && ls -a
+      < ~/files/config.txt tee -a /etc/prometheus/prometheus.yml
+
+  - name: "configure server service"
+    become: true
+    shell: |
+      if [ -f "/etc/systemd/system/prometheus.service" ]
+      then
+        < ~/files/service.txt tee -a /etc/systemd/system/prometheus.service
+      else
+        touch /etc/systemd/system/prometheus.service
+        < ~/files/service.txt tee -a /etc/systemd/system/prometheus.service
+      fi
+
+  - name: "change permissions"
+    become: true
+    shell: |
+      chown prometheus:prometheus /etc/prometheus
+      chown prometheus:prometheus /usr/local/bin/prometheus
+      chown prometheus:prometheus /usr/local/bin/promtool
+      chown -R prometheus:prometheus /etc/prometheus/consoles
+      chown -R prometheus:prometheus /etc/prometheus/console_libraries
+      chown -R prometheus:prometheus /var/lib/prometheus
+
+  - name: "configure systemd"
+    become: true
+    shell: |
+      systemctl daemon-reload
+      systemctl enable prometheus

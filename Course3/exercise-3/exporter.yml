@@ -1,0 +1,9 @@
+---
+  - name: set up prometheus node exporter in EC2
+    hosts: all
+    user: ubuntu
+    become: true
+    become_method: sudo
+    become_user: root
+    roles:
+      - configure_exporter

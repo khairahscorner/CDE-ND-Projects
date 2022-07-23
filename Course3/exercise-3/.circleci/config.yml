@@ -1,0 +1,128 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@3.1
+
+commands:
+  destroy_infra:
+    description: "Destroy created infrastructure if any job fails"
+    parameters:
+      authorName:
+        type: string
+        default: $NAME
+    steps:
+      - run:
+          name: Delete Cloudformation stack
+          when: on_fail
+          command: |
+            echo "Destroying infrastructure by << parameters.authorName >>"
+            aws cloudformation delete-stack --stack-name instancesStack           
+
+jobs:
+  deploy_infra:
+    docker:
+      - image: amazon/aws-cli
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Deploy prometheus instances
+          command: |
+            aws cloudformation deploy --template-file template.yml --parameter-overrides file://template.json --stack-name instancesStack --region us-east-1
+      - run:
+          name: fetch and save instances DNS name
+          command: |
+            echo "[all]" > ~/inventory.txt
+            aws cloudformation list-exports --query "Exports[?Name==\`ServerDNS\`].Value" --no-paginate --output text >> ~/inventory.txt
+            aws cloudformation list-exports --query "Exports[?Name==\`NodeExporterDNS\`].Value" --no-paginate --output text >> ~/inventory.txt
+            aws cloudformation list-exports --query "Exports[?Name==\`ServerDNS\`].Value" --no-paginate --output text >> ~/server.txt
+            aws cloudformation list-exports --query "Exports[?Name==\`NodeExporterDNS\`].Value" --no-paginate --output text >> ~/exporter.txt
+      - run: yum install -y tar gzip
+      - persist_to_workspace:
+          root:  ~/
+          paths:
+            - inventory.txt
+            - server.txt
+            - exporter.txt
+      # - destroy_infra
+
+  configure_server:
+    docker:
+      - image: python:3.8-alpine3.15
+    working_directory: ~/project
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["c4:7f:58:83:f1:c3:ec:1e:ad:dd:48:65:1e:21:d3:34"]
+      - run:
+          name: install openssh
+          command: apk add --update openssh
+      - run:
+          name: Install dependencies
+          command: |
+            pwd
+            apk add --update ansible
+      - run: apk add --update tar gzip
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Configure prometheus server
+          command: |
+            ansible-playbook server.yml -i ~/project/inventory.txt
+
+  # configure_exporter:
+  #   docker:
+  #     - image: python:3.8-alpine3.15
+  #   working_directory: ~/project
+  #   steps:
+  #     - checkout
+  #     - add_ssh_keys:
+  #         fingerprints: ["c4:7f:58:83:f1:c3:ec:1e:ad:dd:48:65:1e:21:d3:34"]
+  #     - run:
+  #         name: install openssh
+  #         command: apk add --update openssh
+  #     - run:
+  #         name: Install dependencies
+  #         command: |
+  #           pwd && ls -a
+  #           apk add --update ansible
+  #     - run: apk add --update tar gzip
+  #     - attach_workspace:
+  #         at: ~/project
+  #     - run:
+  #         name: Configure prometheus node exporter
+  #         command: |
+  #           ansible-playbook exporter.yml -i ~/project/inventory.txt
+
+  # reconfigure_server:
+  #   docker:
+  #     - image: python:3.8-alpine3.15
+  #   working_directory: ~/project
+  #   steps:
+  #     - checkout
+  #     - add_ssh_keys:
+  #         fingerprints: ["c4:7f:58:83:f1:c3:ec:1e:ad:dd:48:65:1e:21:d3:34"]
+  #     - attach_workspace:
+  #         at: ~/project
+  #     - run:
+  #         name: Configure prometheus node exporter
+  #         command: |
+  #           ansible-playbook exporter.yml -i ~/project/inventory.txt
+
+workflows:
+  workflow1:
+    jobs:
+      - deploy_infra:
+          filters:
+            branches:
+              only: master
+      - configure_server:
+          requires:
+            - deploy_infra
+      # - configure_exporter:
+      #     requires:
+      #       - deploy_infra 
+      #       - configure_server 
+      # - reconfigure_server:
+      #     requires:
+      #       - configure_exporter
