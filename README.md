@@ -38,3 +38,16 @@ Built with:
 ### Contents
 - Exercise solutions + sample exercises
 - Submission
+
+## Course 4: Microservices at Scale using AWS & Kubernetes
+Submission for Project 4 and Solutions to exercises in Course 4 + personal exercises.
+
+### Project Title
+Assessment: Project: Operationalize a Machine Learning Microservice API - to be updated
+
+Built with:
+- to be updated
+
+### Contents
+- Lessons solutions
+- Submission
