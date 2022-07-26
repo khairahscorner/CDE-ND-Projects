@@ -27,13 +27,12 @@ Built with AWS CloudFormation, S3, EC2, IAM
 Submission for Project 3 and Solutions to exercises in Course 3 + personal exercises.
 
 ### Project Title
-Assessment: Project: Give Your Application Auto-Deploy Superpowers - https://github.com/khairahscorner/UdapeopleProject
+Give Your Application Auto-Deploy Superpowers - https://github.com/khairahscorner/UdapeopleProject
 
 Built with:
 - AWS - RDS, S3, EC2, CloudFront, CloudFormation
 - CircleCI + GitHub Actions
-- Ansible
-- Prometheus
+- Ansible, Prometheus
 
 ### Contents
 - Exercise solutions + sample exercises
@@ -43,10 +42,12 @@ Built with:
 Submission for Project 4 and Solutions to exercises in Course 4 + personal exercises.
 
 ### Project Title
-Assessment: Project: Operationalize a Machine Learning Microservice API - to be updated
+Operationalize a Machine Learning Microservice API - https://github.com/khairahscorner/UdacityMicroservicesProject
 
 Built with:
-- to be updated
+- CircleCI, Docker, Kubernetes (minikube)
+- AWS - Cloud9, EC2
+- Python(Flask), Bash scripts
 
 ### Contents
 - Lessons solutions
